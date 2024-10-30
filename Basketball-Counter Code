@@ -1,0 +1,58 @@
+clear all
+clc
+
+% Initialize Arduino and Ultrasonic sensor
+arduinoobj = arduino("COM3","Uno","Libraries","Ultrasonic");
+Ultrasonicobj = ultrasonic(arduinoobj, "D12", "D13");
+
+% Detection parameters
+threshold = 0.3;  % Distance threshold in meters (adjust as needed)
+timeinterval = 0.005;  % Time interval between measurements
+object_detected = false;  % Variable to track if an object is detected
+buffer_size = 10;  % Buffer to store the latest raw data for smoothing
+hoops = 0;
+Rawdata = zeros(1, buffer_size);  % Array to hold raw data for smoothing
+i = 1;
+
+% Plot setup
+figure(1)
+hold on
+xlim([0 15])  % Set x-axis limits (adjust as needed)
+ylim([0 inf])  % Set y-axis limits for distance measurements
+grid on
+
+% Start timer
+tic
+
+% Main loop to track objects passing by
+while true
+    % Read the distance from the ultrasonic sensor
+    distancevalue = readDistance(Ultrasonicobj);
+    
+    % Store the current distance in the raw data buffer
+    Rawdata(i) = distancevalue;
+    
+    % Smooth the data by calculating a moving average
+    if i == buffer_size
+        smoothed_distance = mean(Rawdata);
+        i = 1;  % Reset the index after filling the buffer
+    else
+        smoothed_distance = distancevalue;  % Use current value if buffer not full
+        i = i + 1;
+    end
+    
+    % % Plot the smoothed distance value over time
+    % plot(toc, smoothed_distance, "bo")
+    % pause(timeinterval)  % Pause to control the rate of measurement
+
+    % Object detection logic
+    if smoothed_distance < threshold && ~object_detected
+        % Object entered the sensor's range
+        disp('Score!!!');
+        object_detected = true;  % Update the state
+        hoops= hoops +1;
+        disp(hoops);
+        object_detected = false;
+    end
+   pause(5); 
+end
